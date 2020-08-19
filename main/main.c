@@ -1,23 +1,13 @@
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
 #include <esp_err.h>
 
 #include "esp_log.h"
-
-#include "esp_ble_mesh_common_api.h"
-#include "esp_ble_mesh_provisioning_api.h"
-#include "esp_ble_mesh_networking_api.h"
-#include "esp_ble_mesh_config_model_api.h"
-#include "esp_ble_mesh_generic_model_api.h"
-
-#include "ble_mesh_init.h"
-
-// TODO check for examples about ble mesh :$IDF_PATH/examples/bluetooth/esp_ble_mesh/ble_mesh_node/onoff_server/main/main.c
+#include "ble_init.h"
 
 #define TAG "MAIN"
+#define SERVER false
+#define CLIENT false
 
-static uint8_t dev_uuid[16] = { 0xdd, 0xdd };
+static uint8_t dev_uuid[16] = {0xdd, 0xdd};
 
 void app_main(void) {
     esp_err_t err;
@@ -31,9 +21,18 @@ void app_main(void) {
 
     ble_mesh_get_dev_uuid(dev_uuid);
 
-    /* Initialize the Bluetooth Mesh Subsystem */
-    err = ble_mesh_init();
+    /* Initialize the Bluetooth Mesh Subsystem according to the predefined role */
+    if (SERVER) {
+        //        server init
+    } else if (CLIENT) {
+        // client init
+    } else {
+        err = ESP_FAIL;
+    }
+
     if (err) {
         ESP_LOGE(TAG, "Bluetooth mesh init failed (err %d)", err);
     }
+
+
 }

@@ -63,27 +63,3 @@ esp_err_t bluetooth_init(void)
 
     return ret;
 }
-
-static esp_err_t ble_mesh_init(void) {
-    esp_err_t err = ESP_OK;
-
-//    esp_ble_mesh_register_prov_callback(example_ble_mesh_provisioning_cb);
-//    esp_ble_mesh_register_generic_client_callback(example_ble_mesh_generic_client_cb);
-//    esp_ble_mesh_register_config_server_callback(example_ble_mesh_config_server_cb);
-//
-//    err = esp_ble_mesh_init(&provision, &composition);
-//    if (err != ESP_OK) {
-//        ESP_LOGE(TAG, "Failed to initialize mesh stack (err %d)", err);
-//        return err;
-//    }
-//
-//    err = esp_ble_mesh_node_prov_enable(ESP_BLE_MESH_PROV_ADV | ESP_BLE_MESH_PROV_GATT);
-//    if (err != ESP_OK) {
-//        ESP_LOGE(TAG, "Failed to enable mesh node (err %d)", err);
-//        return err;
-//    }
-//
-//    ESP_LOGI(TAG, "BLE Mesh Node initialized");
-
-    return err;
-}
