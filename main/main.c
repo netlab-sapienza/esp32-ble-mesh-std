@@ -17,6 +17,8 @@
 
 #define TAG "MAIN"
 
+static uint8_t dev_uuid[16] = { 0xdd, 0xdd };
+
 void app_main(void) {
     esp_err_t err;
 
