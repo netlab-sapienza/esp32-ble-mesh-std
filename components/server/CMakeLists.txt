@@ -1,3 +1,3 @@
-idf_component_register(SRCS "server.c"
+idf_component_register(SRCS "server.c" "time.c"
         INCLUDE_DIRS "."
-        REQUIRES bt)
+        REQUIRES bt init)
