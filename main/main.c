@@ -12,7 +12,6 @@
 #define ATTACKER true
 
 
-
 void app_main(void) {
     esp_err_t err;
 
@@ -31,13 +30,13 @@ void app_main(void) {
         ESP_LOGE(TAG, "esp32_bluetooth_init failed (err %d)", err);
     }
 
-
     /* Initialize the Bluetooth Mesh Subsystem according to the predefined role */
     if (SERVER) {
         // server init
         err = ble_mesh_init_server();
     } else if (CLIENT) {
         // client init
+        err = ble_mesh_init_client();
     } else {
         err = ESP_FAIL;
     }
