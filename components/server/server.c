@@ -17,10 +17,9 @@
 
 #include "server.h"
 #include "ble_init.h"
+#include "common.h"
 
 #define TAG "SERVER"
-
-#define CID_ESP 0x02E5
 
 static uint8_t dev_uuid[16] = {0xdd, 0xdd};
 
@@ -111,7 +110,6 @@ static void example_change_led_state(esp_ble_mesh_model_t *model,
                                      esp_ble_mesh_msg_ctx_t *ctx, uint8_t onoff) {
     uint16_t primary_addr = esp_ble_mesh_get_primary_element_address();
     uint8_t elem_count = esp_ble_mesh_get_element_count();
-    struct _led_state *led = NULL;
     uint8_t i;
 
     if (ESP_BLE_MESH_ADDR_IS_UNICAST(ctx->recv_dst)) {

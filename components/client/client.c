@@ -14,11 +14,9 @@
 #include "esp_ble_mesh_generic_model_api.h"
 
 #include "client.h"
+#include "common.h"
 
 #define TAG "CLIENT"
-
-
-#define CID_ESP 0x02E5
 
 static uint8_t dev_uuid[16] = {0xdd, 0xdd};
 
