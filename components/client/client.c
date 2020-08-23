@@ -3,6 +3,7 @@
 //
 #include <stdio.h>
 #include <string.h>
+#include <ble_init.h>
 
 #include "esp_log.h"
 #include "nvs_flash.h"
@@ -18,7 +19,6 @@
 
 #define TAG "CLIENT"
 
-static uint8_t dev_uuid[16] = {0xdd, 0xdd};
 
 static struct example_info_store {
     uint16_t net_idx;   /* NetKey Index */
@@ -37,30 +37,11 @@ static struct example_info_store {
 
 static esp_ble_mesh_client_t onoff_client;
 
-static esp_ble_mesh_cfg_srv_t config_server = {
-        .relay = ESP_BLE_MESH_RELAY_DISABLED,
-        .beacon = ESP_BLE_MESH_BEACON_ENABLED,
-#if defined(CONFIG_BLE_MESH_FRIEND)
-        .friend_state = ESP_BLE_MESH_FRIEND_ENABLED,
-#else
-        .friend_state = ESP_BLE_MESH_FRIEND_NOT_SUPPORTED,
-#endif
-#if defined(CONFIG_BLE_MESH_GATT_PROXY_SERVER)
-        .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_ENABLED,
-#else
-        .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_NOT_SUPPORTED,
-#endif
-        .default_ttl = 7,
-        /* 3 transmissions with 20ms interval */
-        .net_transmit = ESP_BLE_MESH_TRANSMIT(2, 20),
-        .relay_retransmit = ESP_BLE_MESH_TRANSMIT(2, 20),
-};
-
-ESP_BLE_MESH_MODEL_PUB_DEFINE(onoff_cli_pub, 2 + 1, ROLE_NODE);
+ESP_BLE_MESH_MODEL_PUB_DEFINE(my_service, 2 + 1, ROLE_NODE);
 
 static esp_ble_mesh_model_t root_models[] = {
         ESP_BLE_MESH_MODEL_CFG_SRV(&config_server),
-        ESP_BLE_MESH_MODEL_GEN_ONOFF_CLI(&onoff_cli_pub, &onoff_client),
+        ESP_BLE_MESH_MODEL_GEN_LEVEL_CLI(&my_service, &onoff_client),
 };
 
 static esp_ble_mesh_elem_t elements[] = {
@@ -72,39 +53,6 @@ static esp_ble_mesh_comp_t composition = {
         .elements = elements,
         .element_count = ARRAY_SIZE(elements),
 };
-
-/* Disable OOB security for SILabs Android app */
-static esp_ble_mesh_prov_t provision = {
-        .uuid = dev_uuid,
-#if 0
-        .output_size = 4,
-    .output_actions = ESP_BLE_MESH_DISPLAY_NUMBER,
-    .input_actions = ESP_BLE_MESH_PUSH,
-    .input_size = 4,
-#else
-        .output_size = 0,
-        .output_actions = 0,
-#endif
-};
-
-//static void mesh_example_info_store(void) {
-//    ble_mesh_nvs_store(NVS_HANDLE, NVS_KEY, &store, sizeof(store));
-//}
-//
-//static void mesh_example_info_restore(void) {
-//    esp_err_t err = ESP_OK;
-//    bool exist = false;
-//
-//    err = ble_mesh_nvs_restore(NVS_HANDLE, NVS_KEY, &store, sizeof(store), &exist);
-//    if (err != ESP_OK) {
-//        return;
-//    }
-//
-//    if (exist) {
-//        ESP_LOGI(TAG, "Restore, net_idx 0x%04x, app_idx 0x%04x, onoff %u, tid 0x%02x",
-//                 store.net_idx, store.app_idx, store.onoff, store.tid);
-//    }
-//}
 
 static void prov_complete(uint16_t net_idx, uint16_t addr, uint8_t flags, uint32_t iv_index) {
     ESP_LOGI(TAG, "net_idx: 0x%04x, addr: 0x%04x", net_idx, addr);
@@ -127,7 +75,6 @@ static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event,
     switch (event) {
         case ESP_BLE_MESH_PROV_REGISTER_COMP_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_PROV_REGISTER_COMP_EVT, err_code %d", param->prov_register_comp.err_code);
-//            mesh_example_info_restore(); /* Restore proper mesh example info */
             break;
         case ESP_BLE_MESH_NODE_PROV_ENABLE_COMP_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_NODE_PROV_ENABLE_COMP_EVT, err_code %d", param->node_prov_enable_comp.err_code);
@@ -252,6 +199,8 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
 
 esp_err_t ble_mesh_init_client(void) {
     esp_err_t err = ESP_OK;
+
+    ble_mesh_get_dev_uuid(dev_uuid);
 
     esp_ble_mesh_register_prov_callback(ble_mesh_provisioning_cb);
     esp_ble_mesh_register_generic_client_callback(ble_mesh_generic_client_cb);
