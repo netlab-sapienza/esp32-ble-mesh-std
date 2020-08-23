@@ -1,11 +1,9 @@
 //
 // Created by thecave3 on 19/08/20.
 //
-#include <stdio.h>
 #include <string.h>
 
 #include "esp_log.h"
-#include "nvs_flash.h"
 
 #include "esp_ble_mesh_defs.h"
 #include "esp_ble_mesh_common_api.h"
@@ -21,6 +19,7 @@
 
 #define TAG "SERVER"
 
+//https://github.com/espressif/esp-idf/blob/master/examples/bluetooth/esp_ble_mesh/ble_mesh_node/onoff_server/tutorial/BLE_Mesh_Node_OnOff_Server_Example_Walkthrough.md
 
 ESP_BLE_MESH_MODEL_PUB_DEFINE(level_pub, 2 + 3, ROLE_NODE);
 
@@ -85,8 +84,7 @@ void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble_mesh_p
     }
 }
 
-static void example_change_led_state(esp_ble_mesh_model_t *model,
-                                     esp_ble_mesh_msg_ctx_t *ctx, uint8_t onoff) {
+static void example_change_led_state(esp_ble_mesh_model_t *model, esp_ble_mesh_msg_ctx_t *ctx, uint8_t onoff) {
     uint16_t primary_addr = esp_ble_mesh_get_primary_element_address();
     uint8_t elem_count = esp_ble_mesh_get_element_count();
     uint8_t i;

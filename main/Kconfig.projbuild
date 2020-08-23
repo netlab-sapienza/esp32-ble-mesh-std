@@ -1,5 +1,5 @@
 # put here your custom config value
-menu "Example Configuration"
+menu "Role Configuration"
 config ESP_BLE_ROLE0
     string "ROLE"
     default "SERVER"

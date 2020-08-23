@@ -44,6 +44,4 @@ void app_main(void) {
     if (err) {
         ESP_LOGE(TAG, "Bluetooth mesh init failed (err %d)", err);
     }
-
-
 }

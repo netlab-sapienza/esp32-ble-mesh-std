@@ -40,7 +40,7 @@ static esp_ble_mesh_client_t onoff_client;
 ESP_BLE_MESH_MODEL_PUB_DEFINE(my_service, 2 + 1, ROLE_NODE);
 
 static esp_ble_mesh_model_t root_models[] = {
-        ESP_BLE_MESH_MODEL_CFG_SRV(&config_server),
+        ESP_BLE_MESH_MODEL_CFG_SRV(&config_server), // This model is a server because it works for configuring the node
         ESP_BLE_MESH_MODEL_GEN_LEVEL_CLI(&my_service, &onoff_client),
 };
 
