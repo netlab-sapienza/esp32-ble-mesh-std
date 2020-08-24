@@ -3,10 +3,12 @@
 //
 
 #include <esp_ble_mesh_config_model_api.h>
+#include <esp_ble_mesh_generic_model_api.h>
 
 #include "common.h"
 
 #define TAG "COMMON"
+#define TAG_LOG "BenchMark"
 
 uint8_t dev_uuid[16] = {0xdd, 0xdd};
 
@@ -42,3 +44,13 @@ esp_ble_mesh_prov_t provision = {
         .output_actions = 0,
 #endif
 };
+
+// TODO upgrade to latest toolchain to get rssi
+// TODO complete according paper
+void log_ble_mesh_packet(esp_ble_mesh_generic_server_cb_param_t *param) {
+    ESP_LOGI(TAG_LOG,
+             "net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi 0x%04x, recv_ttl 0x%04x, send_rel 0x%04x, send_ttl 0x%04x, opcode 0x%04x, srv_send %s",
+             param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst, param->ctx.recv_rssi,
+             param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
+             param->ctx.recv_op, param->ctx.srv_send ? "true" : "false");
+}

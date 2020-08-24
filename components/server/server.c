@@ -144,6 +144,14 @@ static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t ev
     esp_ble_mesh_gen_onoff_srv_t *srv;
     ESP_LOGI(TAG, "event 0x%02x, opcode 0x%04x, src 0x%04x, dst 0x%04x",
              event, param->ctx.recv_op, param->ctx.addr, param->ctx.recv_dst);
+//    ESP_LOGI(TAG,
+//             "net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi 0x%04x, recv_ttl 0x%04x, send_rel 0x%04x, send_ttl 0x%04x, opcode 0x%04x, srv_send %s",
+//             param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst, param->ctx.recv_rssi,
+//             param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
+//             param->ctx.recv_op, param->ctx.srv_send ? "true" : "false");
+
+    log_ble_mesh_packet(param);
+
 
     switch (event) {
         case ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT:
@@ -233,6 +241,12 @@ esp_err_t ble_mesh_init_server(void) {
     err = esp_ble_mesh_init(&provision, &composition);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize mesh stack (err %d)", err);
+        return err;
+    }
+
+    err = esp_ble_mesh_set_unprovisioned_device_name(TAG);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to set correct name (err %d)", err);
         return err;
     }
 

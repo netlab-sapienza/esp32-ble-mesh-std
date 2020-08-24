@@ -212,6 +212,12 @@ esp_err_t ble_mesh_init_client(void) {
         return err;
     }
 
+    err = esp_ble_mesh_set_unprovisioned_device_name(TAG);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to set correct name (err %d)", err);
+        return err;
+    }
+
     err = esp_ble_mesh_node_prov_enable(ESP_BLE_MESH_PROV_ADV | ESP_BLE_MESH_PROV_GATT);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to enable mesh node (err %d)", err);
