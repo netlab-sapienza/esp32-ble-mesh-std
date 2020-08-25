@@ -45,13 +45,23 @@ esp_ble_mesh_prov_t provision = {
 #endif
 };
 
-// TODO upgrade to latest toolchain to get rssi
+
 // TODO add on read state
 // TODO complete according paper
-void log_ble_mesh_packet(esp_ble_mesh_generic_server_cb_param_t *param) {
+void log_ble_mesh_server_packet(esp_ble_mesh_generic_server_cb_param_t *param) {
     ESP_LOGI(TAG_LOG,
              "net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi 0x%02x, recv_ttl 0x%02x, send_rel 0x%02x, send_ttl 0x%02x, opcode 0x%08x, srv_send %s",
              param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst, param->ctx.recv_rssi,
              param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
              param->ctx.recv_op, param->ctx.srv_send ? "true" : "false");
+}
+
+// TODO add on read state
+// TODO complete according paper
+void log_ble_mesh_client_packet(esp_ble_mesh_client_common_param_t *params) {
+    ESP_LOGI(TAG_LOG,
+             "net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi 0x%02x, recv_ttl 0x%02x, send_rel 0x%02x, send_ttl 0x%02x, opcode 0x%08x, srv_send %s",
+             params->ctx.net_idx, params->ctx.app_idx, params->ctx.addr, params->ctx.recv_dst, params->ctx.recv_rssi,
+             params->ctx.recv_ttl, params->ctx.send_rel, params->ctx.send_ttl,
+             params->ctx.recv_op, params->ctx.srv_send ? "true" : "false");
 }

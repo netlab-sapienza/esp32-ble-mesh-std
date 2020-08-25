@@ -7,7 +7,7 @@
 #include "client.h"
 
 #define TAG "MAIN"
-#define SERVER true
+#define SERVER false
 #define CLIENT true
 #define ATTACKER true
 

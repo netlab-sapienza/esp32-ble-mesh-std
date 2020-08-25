@@ -20,11 +20,13 @@
 #define TAG "CLIENT"
 
 
-static struct example_info_store {
+static struct info_store {
     uint16_t net_idx;   /* NetKey Index */
     uint16_t app_idx;   /* AppKey Index */
-    uint8_t onoff;     /* Remote OnOff */
-    uint8_t tid;       /* Message TID */
+    uint16_t level;     /* Level value */
+    uint8_t tid;       /* Message TID (Transaction ID) */
+    uint8_t trans_time; /* Transition time */
+    uint8_t delay; /* Delay */
 } __attribute__((packed)) store = {
         .net_idx = ESP_BLE_MESH_KEY_UNUSED,
         .app_idx = ESP_BLE_MESH_KEY_UNUSED,
@@ -32,16 +34,16 @@ static struct example_info_store {
         .tid = 0x0,
 };
 
-//static nvs_handle_t NVS_HANDLE;
-//static const char *NVS_KEY = "onoff_client";
+static nvs_handle_t NVS_HANDLE;
+static const char *NVS_KEY = "level_client";
 
 static esp_ble_mesh_client_t onoff_client;
 
-ESP_BLE_MESH_MODEL_PUB_DEFINE(my_service, 2 + 1, ROLE_NODE);
+ESP_BLE_MESH_MODEL_PUB_DEFINE(level_client, 2 + 1, ROLE_NODE);
 
 static esp_ble_mesh_model_t root_models[] = {
         ESP_BLE_MESH_MODEL_CFG_SRV(&config_server), // This model is a server because it works for configuring the node
-        ESP_BLE_MESH_MODEL_GEN_LEVEL_CLI(&my_service, &onoff_client),
+        ESP_BLE_MESH_MODEL_GEN_LEVEL_CLI(&level_client, &onoff_client),
 };
 
 static esp_ble_mesh_elem_t elements[] = {
@@ -55,6 +57,7 @@ static esp_ble_mesh_comp_t composition = {
 };
 
 static void prov_complete(uint16_t net_idx, uint16_t addr, uint8_t flags, uint32_t iv_index) {
+    ESP_LOGI(TAG, "Provision Complete");
     ESP_LOGI(TAG, "net_idx: 0x%04x, addr: 0x%04x", net_idx, addr);
     ESP_LOGI(TAG, "flags: 0x%02x, iv_index: 0x%08x", flags, iv_index);
 //    board_led_operation(LED_G, LED_OFF);
@@ -70,8 +73,7 @@ static void prov_complete(uint16_t net_idx, uint16_t addr, uint8_t flags, uint32
      */
 }
 
-static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event,
-                                     esp_ble_mesh_prov_cb_param_t *param) {
+static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble_mesh_prov_cb_param_t *param) {
     switch (event) {
         case ESP_BLE_MESH_PROV_REGISTER_COMP_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_PROV_REGISTER_COMP_EVT, err_code %d", param->prov_register_comp.err_code);
@@ -103,12 +105,19 @@ static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event,
     }
 }
 
-void ble_mesh_send_gen_onoff_set(void) {
+void ble_mesh_send_gen_level_set(void) {
+
+    if (!esp_ble_mesh_node_is_provisioned()) {
+        ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
+        return;
+    }
+
+
     esp_ble_mesh_generic_client_set_state_t set = {0};
     esp_ble_mesh_client_common_param_t common = {0};
     esp_err_t err = ESP_OK;
 
-    common.opcode = ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK;
+    common.opcode = ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK;
     common.model = onoff_client.model;
     common.ctx.net_idx = store.net_idx;
     common.ctx.app_idx = store.app_idx;
@@ -118,38 +127,45 @@ void ble_mesh_send_gen_onoff_set(void) {
     common.msg_timeout = 0;     /* 0 indicates that timeout value from menuconfig will be used */
     common.msg_role = ROLE_NODE;
 
-    set.onoff_set.op_en = false;
-    set.onoff_set.onoff = store.onoff;
-    set.onoff_set.tid = store.tid++;
+    set.level_set.op_en = true;
+    set.level_set.level = store.level;
+    set.level_set.tid = store.tid++;
+    set.level_set.delay = store.delay;
+    set.level_set.trans_time = store.trans_time;
 
+ //     TODO check parameters
     err = esp_ble_mesh_generic_client_set_state(&common, &set);
     if (err) {
-        ESP_LOGE(TAG, "Send Generic OnOff Set Unack failed");
+        ESP_LOGE(TAG, "Send Generic Level Set Unack failed, %x", err);
         return;
     }
 
-    store.onoff = !store.onoff;
+    store.level = (store.level + store.level % 10); // Fake transition
+//    TODO renable info store
 //    mesh_example_info_store(); /* Store proper mesh example info */
 }
 
 static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t event,
                                        esp_ble_mesh_generic_client_cb_param_t *param) {
+
     ESP_LOGI(TAG, "Generic client, event %u, error code %d, opcode is 0x%04x",
              event, param->error_code, param->params->opcode);
+
+    log_ble_mesh_client_packet(param->params);
 
     switch (event) {
         case ESP_BLE_MESH_GENERIC_CLIENT_GET_STATE_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_CLIENT_GET_STATE_EVT");
-            if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET) {
-                ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET, onoff %d",
-                         param->status_cb.onoff_status.present_onoff);
+            if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET) {
+                ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET, level %d",
+                         param->status_cb.level_status.present_level);
             }
             break;
         case ESP_BLE_MESH_GENERIC_CLIENT_SET_STATE_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_CLIENT_SET_STATE_EVT");
-            if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET) {
-                ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET, onoff %d",
-                         param->status_cb.onoff_status.present_onoff);
+            if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET) {
+                ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET, level %d",
+                         param->status_cb.level_status.present_level);
             }
             break;
         case ESP_BLE_MESH_GENERIC_CLIENT_PUBLISH_EVT:
@@ -157,9 +173,9 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
             break;
         case ESP_BLE_MESH_GENERIC_CLIENT_TIMEOUT_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_CLIENT_TIMEOUT_EVT");
-            if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET) {
-                /* If failed to get the response of Generic OnOff Set, resend Generic OnOff Set  */
-                ble_mesh_send_gen_onoff_set();
+            if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET) {
+                /* If failed to get the response of Generic Level Set, resend Generic Level Set  */
+                ble_mesh_send_gen_level_set();
             }
             break;
         default:
@@ -226,7 +242,11 @@ esp_err_t ble_mesh_init_client(void) {
 
     ESP_LOGI(TAG, "BLE Mesh Node initialized");
 
-//    client_operations();
+    while (1) {
+        ESP_LOGI(TAG, "Sending Generic SET");
+        ble_mesh_send_gen_level_set();
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
+    }
 
     return err;
 }

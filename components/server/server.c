@@ -149,7 +149,7 @@ static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t ev
 
     esp_ble_mesh_gen_level_srv_t *srv;
 
-    log_ble_mesh_packet(param);
+    log_ble_mesh_server_packet(param);
 
 
     switch (event) {
