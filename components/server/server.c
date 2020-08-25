@@ -44,10 +44,9 @@ static esp_ble_mesh_comp_t composition = {
 };
 
 static void prov_complete(uint16_t net_idx, uint16_t addr, uint8_t flags, uint32_t iv_index) {
+    ESP_LOGI(TAG, "Provision has been completed");
     ESP_LOGI(TAG, "net_idx: 0x%04x, addr: 0x%04x", net_idx, addr);
     ESP_LOGI(TAG, "flags: 0x%02x, iv_index: 0x%08x", flags, iv_index);
-    ESP_LOGI(TAG, "Led operations todo");
-//    board_led_operation(LED_G, LED_OFF);
 }
 
 void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble_mesh_prov_cb_param_t *param) {
@@ -85,6 +84,7 @@ void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble_mesh_p
 }
 
 static void example_change_led_state(esp_ble_mesh_model_t *model, esp_ble_mesh_msg_ctx_t *ctx, uint8_t onoff) {
+    // TODO find if useful otherwise drop
     uint16_t primary_addr = esp_ble_mesh_get_primary_element_address();
     uint8_t elem_count = esp_ble_mesh_get_element_count();
     uint8_t i;
@@ -108,31 +108,36 @@ static void example_change_led_state(esp_ble_mesh_model_t *model, esp_ble_mesh_m
 }
 
 static void handle_level_service_msg(esp_ble_mesh_model_t *model, esp_ble_mesh_msg_ctx_t *ctx,
-                                     esp_ble_mesh_server_recv_gen_onoff_set_t *set) {
-    esp_ble_mesh_gen_onoff_srv_t *srv = model->user_data;
+                                     esp_ble_mesh_server_recv_gen_level_set_t *set) {
+    esp_ble_mesh_gen_level_srv_t *srv = model->user_data;
 
     switch (ctx->recv_op) {
-        case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET:
+        case ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET:
             esp_ble_mesh_server_model_send_msg(model, ctx,
-                                               ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS, sizeof(srv->state.onoff),
-                                               &srv->state.onoff);
+                                               ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_STATUS, sizeof(srv->state.level),
+                                               &srv->state.level);
             break;
-        case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET:
+        case ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET:
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK:
-            if (set->op_en == false) {
-                srv->state.onoff = set->onoff;
-            } else {
-                /* TODO: Delay and state transition */
-                srv->state.onoff = set->onoff;
+            srv->state.last_level = srv->state.level;
+            srv->state.level = set->level;
+
+            if (set->op_en) {
+                srv->transition.trans_time = set->trans_time;
+                srv->transition.delay = set->delay;
             }
-            if (ctx->recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET) {
+
+            if (ctx->recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET) {
                 esp_ble_mesh_server_model_send_msg(model, ctx,
-                                                   ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS, sizeof(srv->state.onoff),
-                                                   &srv->state.onoff);
+                                                   ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_STATUS,
+                                                   sizeof(srv->state.level),
+                                                   &srv->state.level);
             }
-            esp_ble_mesh_model_publish(model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS,
-                                       sizeof(srv->state.onoff), &srv->state.onoff, ROLE_NODE);
-            example_change_led_state(model, ctx, srv->state.onoff);
+
+            esp_ble_mesh_model_publish(model, ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_STATUS,
+                                       sizeof(srv->state.level), &srv->state.level, ROLE_NODE);
+
+//            example_change_led_state(model, ctx, srv->state.level);
             break;
         default:
             break;
@@ -141,14 +146,8 @@ static void handle_level_service_msg(esp_ble_mesh_model_t *model, esp_ble_mesh_m
 
 static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t event,
                                        esp_ble_mesh_generic_server_cb_param_t *param) {
-    esp_ble_mesh_gen_onoff_srv_t *srv;
-    ESP_LOGI(TAG, "event 0x%02x, opcode 0x%04x, src 0x%04x, dst 0x%04x",
-             event, param->ctx.recv_op, param->ctx.addr, param->ctx.recv_dst);
-//    ESP_LOGI(TAG,
-//             "net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi 0x%04x, recv_ttl 0x%04x, send_rel 0x%04x, send_ttl 0x%04x, opcode 0x%04x, srv_send %s",
-//             param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst, param->ctx.recv_rssi,
-//             param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
-//             param->ctx.recv_op, param->ctx.srv_send ? "true" : "false");
+
+    esp_ble_mesh_gen_level_srv_t *srv;
 
     log_ble_mesh_packet(param);
 
@@ -156,34 +155,35 @@ static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t ev
     switch (event) {
         case ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT");
-            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET ||
-                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK) {
-                ESP_LOGI(TAG, "onoff 0x%02x", param->value.state_change.onoff_set.onoff);
-                example_change_led_state(param->model, &param->ctx, param->value.state_change.onoff_set.onoff);
+            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET ||
+                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK) {
+                ESP_LOGI(TAG, "level %d", param->value.state_change.level_set.level);
+                example_change_led_state(param->model, &param->ctx, param->value.state_change.level_set.level);
             }
             break;
         case ESP_BLE_MESH_GENERIC_SERVER_RECV_GET_MSG_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_RECV_GET_MSG_EVT");
-            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET) {
+            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET) {
                 srv = param->model->user_data;
-                ESP_LOGI(TAG, "onoff 0x%02x", srv->state.onoff);
+                ESP_LOGI(TAG, "level %d", srv->state.level);
                 handle_level_service_msg(param->model, &param->ctx, NULL);
             }
             break;
         case ESP_BLE_MESH_GENERIC_SERVER_RECV_SET_MSG_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_RECV_SET_MSG_EVT");
-            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET ||
-                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK) {
-                ESP_LOGI(TAG, "onoff 0x%02x, tid 0x%02x", param->value.set.onoff.onoff, param->value.set.onoff.tid);
-                if (param->value.set.onoff.op_en) {
+            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET ||
+                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK) {
+                ESP_LOGI(TAG, "level %d, tid 0x%02x", param->value.set.level.level, param->value.set.level.tid);
+
+                if (param->value.set.level.op_en) {
                     ESP_LOGI(TAG, "trans_time 0x%02x, delay 0x%02x",
-                             param->value.set.onoff.trans_time, param->value.set.onoff.delay);
+                             param->value.set.level.trans_time, param->value.set.level.delay);
                 }
-                handle_level_service_msg(param->model, &param->ctx, &param->value.set.onoff);
+                handle_level_service_msg(param->model, &param->ctx, &param->value.set.level);
             }
             break;
         default:
-            ESP_LOGE(TAG, "Unknown Generic Server event 0x%02x", event);
+            ESP_LOGE(TAG, "Unhandled Generic Server event 0x%02x", event);
             break;
     }
 }
