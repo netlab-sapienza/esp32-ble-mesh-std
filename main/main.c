@@ -5,11 +5,16 @@
 #include "ble_init.h"
 #include "server.h"
 #include "client.h"
+#include "relay.h"
 
 #define TAG "MAIN"
-#define SERVER false
-#define CLIENT true
-#define ATTACKER true
+
+#define ROLE 1
+
+#define SERVER 0
+#define CLIENT 1
+#define RELAY 2
+#define ATTACKER 3
 
 
 void app_main(void) {
@@ -31,14 +36,20 @@ void app_main(void) {
     }
 
     /* Initialize the Bluetooth Mesh Subsystem according to the predefined role */
-    if (SERVER) {
-        // server init
-        err = ble_mesh_init_server();
-    } else if (CLIENT) {
-        // client init
-        err = ble_mesh_init_client();
-    } else {
-        err = ESP_FAIL;
+    switch (ROLE) {
+        case SERVER:
+            err = ble_mesh_init_server();
+            break;
+        case CLIENT:
+            err = ble_mesh_init_client();
+            break;
+        case RELAY:
+            err = ble_mesh_init_relay();
+            break;
+        case ATTACKER:
+
+        default:
+            err = ESP_FAIL;
     }
 
     if (err) {

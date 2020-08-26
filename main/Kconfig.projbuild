@@ -1,9 +1,8 @@
 # put here your custom config value
 menu "Role Configuration"
-config ESP_BLE_ROLE0
+config ESP_BLE_ROLE
     string "ROLE"
-    default "SERVER"
+    default 0
     help
- 	Predefined Role of the node.
-
+ 	Predefined Role of the node: 0 -> SERVER, 1 -> CLIENT, 2 -> RELAY, 3 -> ATTACKER
 endmenu

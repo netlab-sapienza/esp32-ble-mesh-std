@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 list(APPEND PROJ_COMPS_LIST)
 
 # PROJ_COMPS stores the name of the all custom components required by the project
-set(PROJ_COMPS "init" "server" "client" "common")
+set(PROJ_COMPS "init" "server" "client" "common" "relay")
 
 # Each component directory is in "components"
 set(BASE_COMPS_PATH "components/")
