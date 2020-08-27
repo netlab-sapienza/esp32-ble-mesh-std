@@ -23,6 +23,7 @@
 
 ESP_BLE_MESH_MODEL_PUB_DEFINE(level_pub, 2 + 3, ROLE_NODE);
 
+// responses to the client will be send automatically by the stack
 static esp_ble_mesh_gen_level_srv_t level_server = {
         .rsp_ctrl.get_auto_rsp = ESP_BLE_MESH_SERVER_AUTO_RSP,
         .rsp_ctrl.set_auto_rsp = ESP_BLE_MESH_SERVER_AUTO_RSP,
@@ -33,10 +34,12 @@ static esp_ble_mesh_model_t root_models[] = {
         ESP_BLE_MESH_MODEL_GEN_LEVEL_SRV(&level_pub, &level_server),
 };
 
+// the number of element in a given node relation of with the model
 static esp_ble_mesh_elem_t elements[] = {
-        ESP_BLE_MESH_ELEMENT(0, root_models, ESP_BLE_MESH_MODEL_NONE)
+        ESP_BLE_MESH_ELEMENT(0, root_models, ESP_BLE_MESH_MODEL_NONE) // primary element
 };
 
+// this is the composition of the node with the elements
 static esp_ble_mesh_comp_t composition = {
         .cid = CID_ESP,
         .elements = elements,

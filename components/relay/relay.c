@@ -19,33 +19,22 @@
 
 #define TAG "RELAY"
 
-//https://github.com/espressif/esp-idf/blob/master/examples/bluetooth/esp_ble_mesh/ble_mesh_node/onoff_server/tutorial/BLE_Mesh_Node_OnOff_Server_Example_Walkthrough.md
+uint16_t node_net_idx = ESP_BLE_MESH_KEY_UNUSED;
+uint16_t node_app_idx = ESP_BLE_MESH_KEY_UNUSED;
 
-esp_ble_mesh_cfg_srv_t relay_config_server = {
-        .relay = ESP_BLE_MESH_RELAY_ENABLED,
-        .beacon = ESP_BLE_MESH_BEACON_ENABLED,
-#if defined(CONFIG_BLE_MESH_FRIEND)
-        .friend_state = ESP_BLE_MESH_FRIEND_ENABLED,
-#else
-        .friend_state = ESP_BLE_MESH_FRIEND_NOT_SUPPORTED,
-#endif
-#if defined(CONFIG_BLE_MESH_GATT_PROXY_SERVER)
-        .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_ENABLED,
-#else
-        .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_NOT_SUPPORTED,
-#endif
-        .default_ttl = 7,
-        /* 3 transmissions with 20ms interval */
-        .net_transmit = ESP_BLE_MESH_TRANSMIT(2, 20),
-        .relay_retransmit = ESP_BLE_MESH_TRANSMIT(2, 20),
-};
 
+// this is the root model or the model for the primary element
 static esp_ble_mesh_model_t root_models[] = {
-        ESP_BLE_MESH_MODEL_CFG_SRV(&relay_config_server)
+        ESP_BLE_MESH_MODEL_CFG_SRV(&config_server)
 };
 
+// the number of element in a given node relation of with the model
 static esp_ble_mesh_elem_t elements[] = {
-        ESP_BLE_MESH_ELEMENT(0, root_models, ESP_BLE_MESH_MODEL_NONE)
+        ESP_BLE_MESH_ELEMENT(0, root_models, ESP_BLE_MESH_MODEL_NONE) // primary element
+};
+
+static esp_ble_mesh_prov_t provision_relay = {
+        .uuid = dev_uuid
 };
 
 static esp_ble_mesh_comp_t composition = {
@@ -87,6 +76,27 @@ void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble_mesh_p
         case ESP_BLE_MESH_NODE_SET_UNPROV_DEV_NAME_COMP_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_NODE_SET_UNPROV_DEV_NAME_COMP_EVT, err_code %d",
                      param->node_set_unprov_dev_name_comp.err_code);
+            break;
+
+        case ESP_BLE_MESH_NODE_PROV_OUTPUT_NUMBER_EVT:
+            ESP_LOGI(TAG, " output number is %d ", param->node_prov_output_num.number);
+            break;
+        case ESP_BLE_MESH_NODE_PROV_OUTPUT_STRING_EVT:
+            ESP_LOGI(TAG, " output string is %s", param->node_prov_output_str.string);
+            break;
+
+        case ESP_BLE_MESH_HEARTBEAT_MESSAGE_RECV_EVT:
+            ESP_LOGI(TAG, " heartbeat hops %d feature 0x%04x", param->heartbeat_msg_recv.hops,
+                     param->heartbeat_msg_recv.feature);
+            break;
+
+        case ESP_BLE_MESH_NODE_PROV_OOB_PUB_KEY_EVT:
+            ESP_LOGI(TAG, "ESP_BLE_MESH_NODE_PROV_OOB_PUB_KEY_EVT");
+            break;
+
+        case ESP_BLE_MESH_NODE_PROV_SET_OOB_PUB_KEY_COMP_EVT:
+            ESP_LOGI(TAG, "ESP_BLE_MESH_NODE_PROV_SET_OOB_PUB_KEY_COMP_EVT  error code is %d",
+                     param->node_prov_set_oob_pub_key_comp.err_code);
             break;
         default:
             ESP_LOGW(TAG, "Event not handled, event code: %d", event);
@@ -186,6 +196,7 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                          param->value.state_change.appkey_add.net_idx,
                          param->value.state_change.appkey_add.app_idx);
                 ESP_LOG_BUFFER_HEX("AppKey", param->value.state_change.appkey_add.app_key, 16);
+                ESP_LOGI(TAG, "opcode for the procedure is %x", param->ctx.recv_op);
                 break;
             case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
                 ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND");
@@ -194,6 +205,10 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                          param->value.state_change.mod_app_bind.app_idx,
                          param->value.state_change.mod_app_bind.company_id,
                          param->value.state_change.mod_app_bind.model_id);
+                if (param->value.state_change.mod_app_bind.company_id == 0xFFFF &&
+                    param->value.state_change.mod_app_bind.model_id == ESP_BLE_MESH_MODEL_ID_GEN_LEVEL_CLI) {
+                    node_app_idx = param->value.state_change.mod_app_bind.app_idx;
+                }
                 break;
             case ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD:
                 ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD");
@@ -203,7 +218,12 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                          param->value.state_change.mod_sub_add.company_id,
                          param->value.state_change.mod_sub_add.model_id);
                 break;
+            case ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET:
+                ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET");
+                ESP_LOGI(TAG, "publish address is 0x%04x", param->value.state_change.mod_pub_set.pub_addr);
+                break;
             default:
+                ESP_LOGI(TAG, "config server callback value is  0x%04x ", param->ctx.recv_op);
                 break;
         }
     }
@@ -217,9 +237,8 @@ esp_err_t ble_mesh_init_relay(void) {
 
     esp_ble_mesh_register_prov_callback(ble_mesh_provisioning_cb);
     esp_ble_mesh_register_config_server_callback(ble_mesh_config_server_cb);
-    esp_ble_mesh_register_generic_server_callback(ble_mesh_generic_server_cb);
 
-    err = esp_ble_mesh_init(&provision, &composition);
+    err = esp_ble_mesh_init(&provision_relay, &composition);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize mesh stack (err %d)", err);
         return err;

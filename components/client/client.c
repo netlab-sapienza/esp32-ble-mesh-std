@@ -129,15 +129,16 @@ static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble
 
 
 void ble_mesh_send_test_gen_level_get(void) {
-
     if (!esp_ble_mesh_node_is_provisioned()) {
         ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
         return;
     }
 
-    esp_ble_mesh_generic_client_get_state_t get = {0};
-    esp_ble_mesh_client_common_param_t common = {0};
     esp_err_t err = ESP_OK;
+
+    esp_ble_mesh_generic_client_get_state_t get = {0};
+
+    esp_ble_mesh_client_common_param_t common = {0};
 
     common.opcode = ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET;
     common.model = level_client.model;
@@ -175,6 +176,7 @@ void ble_mesh_send_gen_level_set(void) {
 
     common.opcode = ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK;
     common.model = level_client.model;
+
     common.ctx.net_idx = store.net_idx;
     common.ctx.app_idx = store.app_idx;
     common.ctx.addr = 0xFFFF;   /* to all nodes */
@@ -186,6 +188,7 @@ void ble_mesh_send_gen_level_set(void) {
     set.level_set.op_en = false;
     set.level_set.level = store.level;
     set.level_set.tid = store.tid++;
+
 
 //    if set.level.op_en == true:
 //    set.level_set.delay = store.delay;
@@ -274,7 +277,7 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                          param->value.state_change.mod_app_bind.company_id,
                          param->value.state_change.mod_app_bind.model_id);
                 if (param->value.state_change.mod_app_bind.company_id == 0xFFFF &&
-                    param->value.state_change.mod_app_bind.model_id == ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_CLI) {
+                    param->value.state_change.mod_app_bind.model_id == ESP_BLE_MESH_MODEL_ID_GEN_LEVEL_CLI) {
                     store.app_idx = param->value.state_change.mod_app_bind.app_idx;
                     mesh_info_store(); /* Store proper mesh example info */
                 }

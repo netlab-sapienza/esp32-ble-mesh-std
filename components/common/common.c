@@ -14,7 +14,7 @@
 uint8_t dev_uuid[16] = {0xdd, 0xdd};
 
 esp_ble_mesh_cfg_srv_t config_server = {
-        .relay = ESP_BLE_MESH_RELAY_DISABLED,
+        .relay = ESP_BLE_MESH_RELAY_ENABLED,
         .beacon = ESP_BLE_MESH_BEACON_ENABLED,
 #if defined(CONFIG_BLE_MESH_FRIEND)
         .friend_state = ESP_BLE_MESH_FRIEND_ENABLED,
@@ -26,10 +26,10 @@ esp_ble_mesh_cfg_srv_t config_server = {
 #else
         .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_NOT_SUPPORTED,
 #endif
-        .default_ttl = 7,
+        .default_ttl = 7, // default ttl value is 7 it decide the number of hops in the network
         /* 3 transmissions with 20ms interval */
         .net_transmit = ESP_BLE_MESH_TRANSMIT(2, 20),
-        .relay_retransmit = ESP_BLE_MESH_TRANSMIT(2, 20),
+        .relay_retransmit = ESP_BLE_MESH_TRANSMIT(2, 20)
 };
 
 /* Disable OOB security for SILabs Android app */
