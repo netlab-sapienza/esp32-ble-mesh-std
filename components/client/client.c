@@ -212,7 +212,7 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
     ESP_LOGI(TAG, "Generic client, event %u, error code %d, opcode is 0x%04x",
              event, param->error_code, param->params->opcode);
 
-    log_ble_mesh_client_packet(param->params);
+    log_ble_mesh_client_packet(TAG, param->params);
 
     switch (event) {
         case ESP_BLE_MESH_GENERIC_CLIENT_GET_STATE_EVT:
@@ -258,7 +258,7 @@ void ble_mesh_send_test_gen_level_set(void) {
 static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                                       esp_ble_mesh_cfg_server_cb_param_t *param) {
 
-    log_ble_mesh_config_server_packet(param);
+    log_ble_mesh_config_server_packet(TAG, param);
 
     if (event == ESP_BLE_MESH_CFG_SERVER_STATE_CHANGE_EVT) {
         switch (param->ctx.recv_op) {

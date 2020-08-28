@@ -146,7 +146,7 @@ static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t ev
 
     esp_ble_mesh_gen_level_srv_t *srv;
 
-    log_ble_mesh_generic_server_packet(param);
+    log_ble_mesh_generic_server_packet(TAG, param);
 
     switch (event) {
         case ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT:
@@ -186,8 +186,8 @@ static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t ev
 static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                                       esp_ble_mesh_cfg_server_cb_param_t *param) {
 
-    log_ble_mesh_config_server_packet(param);
-
+    log_ble_mesh_config_server_packet(TAG, param);
+    
     if (event == ESP_BLE_MESH_CFG_SERVER_STATE_CHANGE_EVT) {
         switch (param->ctx.recv_op) {
             case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:

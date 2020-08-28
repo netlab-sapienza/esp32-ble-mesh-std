@@ -48,32 +48,49 @@ esp_ble_mesh_prov_t provision = {
 
 // TODO add on read state
 // TODO complete according paper
-void log_ble_mesh_packet(uint16_t net_idx, uint16_t app_idx, uint16_t addr, uint16_t recv_dst, int8_t recv_rssi,
-                         uint8_t recv_ttl, uint8_t send_rel,
-                         uint8_t send_ttl, uint32_t recv_op, bool srv_send) {
+/**
+ * Log the ble mesh packet
+ *
+ * @param uuid UUID representing the device composed by definition of 2 bytes {0xdd, 0xdd} + 6 bytes of BDA
+ * @param tag representing the ROLE of the device within the network
+ * @param net_idx NetKey Index of the subnet
+ * @param app_idx AppKey Index for message encryption.
+ * @param addr Source address
+ * @param recv_dst Destination address of a received message.
+ * @param recv_rssi RSSI of received packet.
+ * @param recv_ttl Received TTL value.
+ * @param send_rel Force sending reliably by using segment acknowledgement
+ * @param send_ttl TTL (time to live) of the packet, or ESP_BLE_MESH_TTL_DEFAULT for default TTL
+ * @param recv_op Opcode of a received message.
+ * @param srv_send Indicate if the message is sent by a node server model.
+ */
+void log_ble_mesh_packet(uint8_t *uuid, char *tag, uint16_t net_idx, uint16_t app_idx, uint16_t addr,
+                         uint16_t recv_dst,
+                         int8_t recv_rssi, uint8_t recv_ttl, uint8_t send_rel, uint8_t send_ttl, uint32_t recv_op,
+                         bool srv_send) {
     ESP_LOGI(TAG_LOG,
-             "net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi %d, recv_ttl %d, send_rel %d, "
-             "send_ttl %d, opcode 0x%08x, srv_send %s",
+             "uuid %s ,tag %s ,net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi %d, recv_ttl %d, send_rel %d, "
+             "send_ttl %d, opcode 0x%08x, srv_send %s", uuid, tag,
              net_idx, app_idx, addr, recv_dst, recv_rssi, recv_ttl, send_rel, send_ttl,
              recv_op, srv_send ? "true" : "false");
 }
 
-void log_ble_mesh_generic_server_packet(esp_ble_mesh_generic_server_cb_param_t *param) {
-    log_ble_mesh_packet(param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
+void log_ble_mesh_generic_server_packet(char *tag, esp_ble_mesh_generic_server_cb_param_t *param) {
+    log_ble_mesh_packet(dev_uuid, tag, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
                         param->ctx.recv_rssi,
                         param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
                         param->ctx.recv_op, param->ctx.srv_send);
 }
 
-void log_ble_mesh_config_server_packet(esp_ble_mesh_cfg_server_cb_param_t *param) {
-    log_ble_mesh_packet(param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
+void log_ble_mesh_config_server_packet(char *tag, esp_ble_mesh_cfg_server_cb_param_t *param) {
+    log_ble_mesh_packet(dev_uuid, tag, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
                         param->ctx.recv_rssi,
                         param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
                         param->ctx.recv_op, param->ctx.srv_send);
 }
 
-void log_ble_mesh_client_packet(esp_ble_mesh_client_common_param_t *params) {
-    log_ble_mesh_packet(params->ctx.net_idx, params->ctx.app_idx, params->ctx.addr, params->ctx.recv_dst,
+void log_ble_mesh_client_packet(char *tag, esp_ble_mesh_client_common_param_t *params) {
+    log_ble_mesh_packet(dev_uuid, tag, params->ctx.net_idx, params->ctx.app_idx, params->ctx.addr, params->ctx.recv_dst,
                         params->ctx.recv_rssi,
                         params->ctx.recv_ttl, params->ctx.send_rel, params->ctx.send_ttl,
                         params->ctx.recv_op, params->ctx.srv_send);
