@@ -11,7 +11,6 @@
 #include "esp_ble_mesh_provisioning_api.h"
 #include "esp_ble_mesh_config_model_api.h"
 #include "esp_ble_mesh_generic_model_api.h"
-#include "esp_ble_mesh_local_data_operation_api.h"
 
 #include "server.h"
 #include "ble_init.h"
@@ -23,10 +22,9 @@
 
 ESP_BLE_MESH_MODEL_PUB_DEFINE(level_pub, 2 + 3, ROLE_NODE);
 
-// responses to the client will be send automatically by the stack
 static esp_ble_mesh_gen_level_srv_t level_server = {
-        .rsp_ctrl.get_auto_rsp = ESP_BLE_MESH_SERVER_AUTO_RSP,
-        .rsp_ctrl.set_auto_rsp = ESP_BLE_MESH_SERVER_AUTO_RSP,
+        .rsp_ctrl.get_auto_rsp = ESP_BLE_MESH_SERVER_RSP_BY_APP,
+        .rsp_ctrl.set_auto_rsp = ESP_BLE_MESH_SERVER_RSP_BY_APP,
 };
 
 static esp_ble_mesh_model_t root_models[] = {
@@ -86,30 +84,6 @@ void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble_mesh_p
     }
 }
 
-static void example_change_led_state(esp_ble_mesh_model_t *model, esp_ble_mesh_msg_ctx_t *ctx, uint8_t onoff) {
-    // TODO find if useful otherwise drop
-    uint16_t primary_addr = esp_ble_mesh_get_primary_element_address();
-    uint8_t elem_count = esp_ble_mesh_get_element_count();
-    uint8_t i;
-
-    if (ESP_BLE_MESH_ADDR_IS_UNICAST(ctx->recv_dst)) {
-        for (i = 0; i < elem_count; i++) {
-            if (ctx->recv_dst == (primary_addr + i)) {
-//                led = &led_state[i];
-//                board_led_operation(led->pin, onoff);
-            }
-        }
-    } else if (ESP_BLE_MESH_ADDR_IS_GROUP(ctx->recv_dst)) {
-        if (esp_ble_mesh_is_model_subscribed_to_group(model, ctx->recv_dst)) {
-//            led = &led_state[model->element->element_addr - primary_addr];
-//            board_led_operation(led->pin, onoff);
-        }
-    } else if (ctx->recv_dst == 0xFFFF) {
-//        led = &led_state[model->element->element_addr - primary_addr];
-//        board_led_operation(led->pin, onoff);
-    }
-}
-
 static void handle_level_service_msg(esp_ble_mesh_model_t *model, esp_ble_mesh_msg_ctx_t *ctx,
                                      esp_ble_mesh_server_recv_gen_level_set_t *set) {
     esp_ble_mesh_gen_level_srv_t *srv = model->user_data;
@@ -140,7 +114,6 @@ static void handle_level_service_msg(esp_ble_mesh_model_t *model, esp_ble_mesh_m
             esp_ble_mesh_model_publish(model, ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_STATUS,
                                        sizeof(srv->state.level), &srv->state.level, ROLE_NODE);
 
-//            example_change_led_state(model, ctx, srv->state.level);
             break;
         default:
             break;
@@ -152,17 +125,17 @@ static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t ev
 
     esp_ble_mesh_gen_level_srv_t *srv;
 
-    log_ble_mesh_generic_server_packet(TAG, param);
+    log_ble_mesh_generic_rcv_server_packet(TAG, param);
 
     switch (event) {
-        case ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT:
-            ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT");
-            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET ||
-                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK) {
-                ESP_LOGI(TAG, "level %d", param->value.state_change.level_set.level);
-                example_change_led_state(param->model, &param->ctx, param->value.state_change.level_set.level);
-            }
-            break;
+
+//        case ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT:
+//            ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT");
+//            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET ||
+//                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK) {
+//                ESP_LOGI(TAG, "level %d", param->value.state_change.level_set.level);
+//            }
+//            break;
         case ESP_BLE_MESH_GENERIC_SERVER_RECV_GET_MSG_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_RECV_GET_MSG_EVT");
             if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET) {
@@ -230,13 +203,6 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
 esp_err_t ble_mesh_init_server(void) {
     esp_err_t err = ESP_OK;
 
-//    operation on time
-//    err = init_time();
-//    if (err != ESP_OK) {
-//        ESP_LOGE(TAG, "Failed to enable mesh node (err %d)", err);
-//        return err;
-//    }
-
     ble_mesh_get_dev_uuid(dev_uuid);
 
     esp_ble_mesh_register_prov_callback(ble_mesh_provisioning_cb);
@@ -262,8 +228,6 @@ esp_err_t ble_mesh_init_server(void) {
     }
 
     ESP_LOGI(TAG, "BLE Mesh Node initialized");
-
-//    time_operation();
 
     return err;
 }

@@ -73,7 +73,6 @@ static void mesh_info_restore(void) {
     if (exist) {
         ESP_LOGI(TAG, "Restore, net_idx 0x%04x, app_idx 0x%04x, level %d, tid 0x%02x",
                  store.net_idx, store.app_idx, store.level, store.tid);
-        // TODO aggiungere altri campi
     }
 }
 

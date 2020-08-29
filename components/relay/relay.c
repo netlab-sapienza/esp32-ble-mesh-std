@@ -77,7 +77,6 @@ void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble_mesh_p
             ESP_LOGI(TAG, "ESP_BLE_MESH_NODE_SET_UNPROV_DEV_NAME_COMP_EVT, err_code %d",
                      param->node_set_unprov_dev_name_comp.err_code);
             break;
-
         case ESP_BLE_MESH_NODE_PROV_OUTPUT_NUMBER_EVT:
             ESP_LOGI(TAG, " output number is %d ", param->node_prov_output_num.number);
             break;
@@ -146,7 +145,7 @@ static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t ev
 
     esp_ble_mesh_gen_level_srv_t *srv;
 
-    log_ble_mesh_generic_server_packet(TAG, param);
+    log_ble_mesh_generic_rcv_server_packet(TAG, param);
 
     switch (event) {
         case ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT:

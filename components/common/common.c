@@ -68,18 +68,38 @@ void log_ble_mesh_packet(uint8_t *uuid, char *tag, uint16_t net_idx, uint16_t ap
                          uint16_t recv_dst,
                          int8_t recv_rssi, uint8_t recv_ttl, uint8_t send_rel, uint8_t send_ttl, uint32_t recv_op,
                          bool srv_send) {
+    // TODO errore stampa uuid
     ESP_LOGI(TAG_LOG,
-             "uuid %s ,tag %s ,net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi %d, recv_ttl %d, send_rel %d, "
-             "send_ttl %d, opcode 0x%08x, srv_send %s", uuid, tag,
+             "uuid %x ,tag %s ,net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi %d, recv_ttl %d, send_rel %d, "
+             "send_ttl %d, opcode 0x%08x, srv_send %s", *uuid, tag,
              net_idx, app_idx, addr, recv_dst, recv_rssi, recv_ttl, send_rel, send_ttl,
              recv_op, srv_send ? "true" : "false");
 }
 
-void log_ble_mesh_generic_server_packet(char *tag, esp_ble_mesh_generic_server_cb_param_t *param) {
-    log_ble_mesh_packet(dev_uuid, tag, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
-                        param->ctx.recv_rssi,
-                        param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
-                        param->ctx.recv_op, param->ctx.srv_send);
+void log_ble_mesh_generic_rcv_server_packet(char *tag, esp_ble_mesh_generic_server_cb_param_t *param) {
+    if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET) {
+        log_ble_mesh_packet(dev_uuid, tag, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
+                            param->ctx.recv_rssi,
+                            param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
+                            param->ctx.recv_op, param->ctx.srv_send);
+
+    } else if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET ||
+               param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK) {
+        // TODO log
+
+//        param->value.set.level.level;
+//        param->value.set.level.tid;
+//        param->value.set.level.op_en;
+//        param->value.set.level.trans_time;
+//        param->value.set.level.delay;
+
+        log_ble_mesh_packet(dev_uuid, tag, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
+                            param->ctx.recv_rssi,
+                            param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
+                            param->ctx.recv_op, param->ctx.srv_send);
+
+    }
+
 }
 
 void log_ble_mesh_config_server_packet(char *tag, esp_ble_mesh_cfg_server_cb_param_t *param) {
