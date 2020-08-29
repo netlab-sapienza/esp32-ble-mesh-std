@@ -11,7 +11,12 @@
 #define TAG_LOG "BenchMark"
 #define NVS_NAME "mesh_levl_nvs"
 
-uint8_t dev_uuid[16] = {0xdd, 0xdd};
+#define DEV_UUID_BUFFER_SIZE 16
+#define LOG_BUF_SIZE 512
+
+uint8_t dev_uuid[DEV_UUID_BUFFER_SIZE] = {0xdd, 0xdd};
+
+unsigned int global_id = 0;
 
 esp_ble_mesh_cfg_srv_t config_server = {
         .relay = ESP_BLE_MESH_RELAY_ENABLED,
@@ -46,13 +51,26 @@ esp_ble_mesh_prov_t provision = {
 #endif
 };
 
-// TODO add on read state
-// TODO complete according paper
+
+int print_address(char *buf, uint8_t *address, int size) {
+    int wb = 0;
+    for (int i = 0; i < size; ++i) {
+        int ret = sprintf(buf + wb, "%X", address[i]);
+        wb += ret;
+    }
+    return wb;
+}
+
+int print_dev_addr(char *buf) {
+    return print_address(buf, dev_uuid, DEV_UUID_BUFFER_SIZE);
+}
+
+// TODO rewrite doc
 /**
- * Log the ble mesh packet
+ * Write into buf the common ble mesh model fields
  *
  * @param uuid UUID representing the device composed by definition of 2 bytes {0xdd, 0xdd} + 6 bytes of BDA
- * @param tag representing the ROLE of the device within the network
+ * @param role representing the ROLE of the device within the network
  * @param net_idx NetKey Index of the subnet
  * @param app_idx AppKey Index for message encryption.
  * @param addr Source address
@@ -64,56 +82,139 @@ esp_ble_mesh_prov_t provision = {
  * @param recv_op Opcode of a received message.
  * @param srv_send Indicate if the message is sent by a node server model.
  */
-void log_ble_mesh_packet(uint8_t *uuid, char *tag, uint16_t net_idx, uint16_t app_idx, uint16_t addr,
-                         uint16_t recv_dst,
-                         int8_t recv_rssi, uint8_t recv_ttl, uint8_t send_rel, uint8_t send_ttl, uint32_t recv_op,
-                         bool srv_send) {
-    // TODO errore stampa uuid
-    ESP_LOGI(TAG_LOG,
-             "uuid %x ,tag %s ,net_idx 0x%04x, app_idx 0x%04x, src 0x%04x, dest 0x%04x, rcv_rssi %d, recv_ttl %d, send_rel %d, "
-             "send_ttl %d, opcode 0x%08x, srv_send %s", *uuid, tag,
-             net_idx, app_idx, addr, recv_dst, recv_rssi, recv_ttl, send_rel, send_ttl,
-             recv_op, srv_send ? "true" : "false");
+int write_ble_mesh_model_packet_common(char *buf, char *role, uint16_t net_idx, uint16_t app_idx, uint16_t addr,
+                                       uint16_t recv_dst,
+                                       int8_t recv_rssi, uint8_t recv_ttl, uint8_t send_rel, uint8_t send_ttl,
+                                       bool srv_send, uint32_t recv_op) {
+    int n = 0;
+    n += sprintf(buf + n, " %u ", global_id);
+    n += print_dev_addr(buf + n);
+    global_id++;
+    n += sprintf(buf + n, " %s ", role);
+    n += sprintf(buf + n, " 0x%04x ", net_idx);
+    n += sprintf(buf + n, " 0x%04x ", app_idx);
+    n += sprintf(buf + n, " 0x%04x ", addr);
+    n += sprintf(buf + n, " 0x%04x ", recv_dst);
+    n += sprintf(buf + n, " %d ", recv_rssi);
+    n += sprintf(buf + n, " %d ", recv_ttl);
+    n += sprintf(buf + n, " %d ", send_rel);
+    n += sprintf(buf + n, " %d ", send_ttl);
+    n += sprintf(buf + n, " %d ", srv_send);
+    n += sprintf(buf + n, " 0x%08x ", recv_op);
+
+    return n;
 }
 
-void log_ble_mesh_generic_rcv_server_packet(char *tag, esp_ble_mesh_generic_server_cb_param_t *param) {
+void log_ble_mesh_generic_rcv_server_packet(char *role, esp_ble_mesh_generic_server_cb_param_t *param) {
+    char buf[LOG_BUF_SIZE];
+    int n = write_ble_mesh_model_packet_common(buf, role, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr,
+                                               param->ctx.recv_dst,
+                                               param->ctx.recv_rssi,
+                                               param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
+                                               param->ctx.srv_send, param->ctx.recv_op);
+
     if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET) {
-        log_ble_mesh_packet(dev_uuid, tag, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
-                            param->ctx.recv_rssi,
-                            param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
-                            param->ctx.recv_op, param->ctx.srv_send);
+        n += sprintf(buf + n, " 0x%04x ", param->value.get.admin_property.property_id);
+        n += sprintf(buf + n, " 0x%04x ", param->value.get.manu_property.property_id);
+        n += sprintf(buf + n, " 0x%04x ", param->value.get.client_properties.property_id);
+        n += sprintf(buf + n, " 0x%04x ", param->value.get.user_property.property_id);
 
     } else if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET ||
                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK) {
-        // TODO log
+        n += sprintf(buf + n, " %d ", param->value.set.level.level);
+        n += sprintf(buf + n, " %d ", param->value.set.level.tid);
+        n += sprintf(buf + n, " %d ", param->value.set.level.op_en);
 
-//        param->value.set.level.level;
-//        param->value.set.level.tid;
-//        param->value.set.level.op_en;
-//        param->value.set.level.trans_time;
-//        param->value.set.level.delay;
+        if (param->value.set.level.op_en) {
+            n += sprintf(buf + n, " %d ", param->value.set.level.trans_time);
+            n += sprintf(buf + n, " %d ", param->value.set.level.delay * 5); // step time of a single delay = 5ms
+        }
+    }
 
-        log_ble_mesh_packet(dev_uuid, tag, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
-                            param->ctx.recv_rssi,
-                            param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
-                            param->ctx.recv_op, param->ctx.srv_send);
+    ESP_LOGI(TAG_LOG, "%d", n);
+    ESP_LOGI(TAG_LOG, "%s", buf);
+
+}
+
+void log_ble_mesh_config_server_packet(char *role, esp_ble_mesh_cfg_server_cb_param_t *param) {
+    char buf[LOG_BUF_SIZE];
+    int n = write_ble_mesh_model_packet_common(buf, role, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr,
+                                               param->ctx.recv_dst,
+                                               param->ctx.recv_rssi,
+                                               param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
+                                               param->ctx.srv_send, param->ctx.recv_op);
+    switch (param->ctx.recv_op) {
+
+        case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
+            n += sprintf(buf + n, " 0x%04x ", param->value.state_change.appkey_add.net_idx);
+            n += sprintf(buf + n, " 0x%04x ", param->value.state_change.appkey_add.app_idx);
+            print_address(buf + n, param->value.state_change.appkey_add.app_key, 16);
+            break;
+
+        case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
+            n += sprintf(buf + n, " 0x%04x ", param->value.state_change.mod_app_bind.element_addr);
+            n += sprintf(buf + n, " 0x%04x ", param->value.state_change.mod_app_bind.app_idx);
+            n += sprintf(buf + n, " 0x%04x ", param->value.state_change.mod_app_bind.company_id);
+            sprintf(buf + n, " 0x%04x ", param->value.state_change.mod_app_bind.model_id);
+            break;
+
+        case ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD:
+            n += sprintf(buf + n, " 0x%04x ", param->value.state_change.mod_sub_add.element_addr);
+            n += sprintf(buf + n, " 0x%04x ", param->value.state_change.mod_sub_add.sub_addr);
+            n += sprintf(buf + n, " 0x%04x ", param->value.state_change.mod_sub_add.company_id);
+            sprintf(buf + n, " 0x%04x ", param->value.state_change.mod_sub_add.model_id);
+            break;
+
+        default:
+            ESP_LOGE(TAG_LOG, "Unhandled case  0x%08x", param->ctx.recv_op);
 
     }
 
+    ESP_LOGI(TAG_LOG, "%s", buf);
 }
 
-void log_ble_mesh_config_server_packet(char *tag, esp_ble_mesh_cfg_server_cb_param_t *param) {
-    log_ble_mesh_packet(dev_uuid, tag, param->ctx.net_idx, param->ctx.app_idx, param->ctx.addr, param->ctx.recv_dst,
-                        param->ctx.recv_rssi,
-                        param->ctx.recv_ttl, param->ctx.send_rel, param->ctx.send_ttl,
-                        param->ctx.recv_op, param->ctx.srv_send);
-}
+void log_ble_mesh_client_packet(char *role, esp_ble_mesh_generic_client_cb_event_t event,
+                                esp_ble_mesh_generic_client_cb_param_t *param) {
+    char buf[LOG_BUF_SIZE];
+    int n = write_ble_mesh_model_packet_common(buf, role, param->params->ctx.net_idx, param->params->ctx.app_idx,
+                                               param->params->ctx.addr,
+                                               param->params->ctx.recv_dst,
+                                               param->params->ctx.recv_rssi,
+                                               param->params->ctx.recv_ttl, param->params->ctx.send_rel,
+                                               param->params->ctx.send_ttl,
+                                               param->params->ctx.srv_send, param->params->ctx.recv_op);
 
-void log_ble_mesh_client_packet(char *tag, esp_ble_mesh_client_common_param_t *params) {
-    log_ble_mesh_packet(dev_uuid, tag, params->ctx.net_idx, params->ctx.app_idx, params->ctx.addr, params->ctx.recv_dst,
-                        params->ctx.recv_rssi,
-                        params->ctx.recv_ttl, params->ctx.send_rel, params->ctx.send_ttl,
-                        params->ctx.recv_op, params->ctx.srv_send);
+//  we associate arbitrarily a identifier code for each event
+    switch (event) {
+        case ESP_BLE_MESH_GENERIC_CLIENT_GET_STATE_EVT: // 0
+            n += sprintf(buf + n, " %d ", 0);
+            if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET) {
+                n += sprintf(buf + n, " %d ", param->status_cb.level_status.present_level);
+                n += sprintf(buf + n, " %d ", param->status_cb.level_status.remain_time);
+                n += sprintf(buf + n, " %d ", param->status_cb.level_status.op_en);
+                if (param->status_cb.level_status.op_en)
+                    sprintf(buf + n, " %d ", param->status_cb.level_status.target_level);
+            }
+            break;
+        case ESP_BLE_MESH_GENERIC_CLIENT_SET_STATE_EVT: // 1
+            n += sprintf(buf + n, " %d ", 1);
+            if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET) {
+                n += sprintf(buf + n, " %d ", param->status_cb.level_status.present_level);
+                n += sprintf(buf + n, " %d ", param->status_cb.level_status.remain_time);
+                n += sprintf(buf + n, " %d ", param->status_cb.level_status.op_en);
+                if (param->status_cb.level_status.op_en)
+                    sprintf(buf + n, " %d ", param->status_cb.level_status.target_level);
+            }
+            break;
+        case ESP_BLE_MESH_GENERIC_CLIENT_PUBLISH_EVT: // 2
+            sprintf(buf + n, " %d ", 2);
+            break;
+
+        default:
+            break;
+    }
+
+    ESP_LOGI(TAG_LOG, "%s", buf);
 }
 
 

@@ -15,11 +15,12 @@ esp_ble_mesh_cfg_srv_t config_server;
 
 esp_ble_mesh_prov_t provision;
 
-void log_ble_mesh_generic_rcv_server_packet(char *tag, esp_ble_mesh_generic_server_cb_param_t *param);
+void log_ble_mesh_generic_rcv_server_packet(char *role, esp_ble_mesh_generic_server_cb_param_t *param);
 
-void log_ble_mesh_config_server_packet(char *tag, esp_ble_mesh_cfg_server_cb_param_t *param);
+void log_ble_mesh_config_server_packet(char *role, esp_ble_mesh_cfg_server_cb_param_t *param);
 
-void log_ble_mesh_client_packet(char *tag, esp_ble_mesh_client_common_param_t *params);
+void log_ble_mesh_client_packet(char *role, esp_ble_mesh_generic_client_cb_event_t event,
+                                esp_ble_mesh_generic_client_cb_param_t *param);
 
 esp_err_t ble_mesh_nvs_open(nvs_handle_t *handle);
 

@@ -149,13 +149,6 @@ void ble_mesh_send_test_gen_level_get(void) {
     common.msg_timeout = 0;     /* 0 indicates that timeout value from menuconfig will be used */
     common.msg_role = ROLE_NODE;
 
-//    get.admin_property_get.property_id = ESP_BLE_MESH_MODEL_OP_GEN_USER_PROPERTY_GET;
-//    set.level_set.op_en = true;
-//    set.level_set.level = store.level;
-//    set.level_set.tid = store.tid++;
-//    set.level_set.delay = store.delay;
-//    set.level_set.trans_time = store.trans_time;
-
     err = esp_ble_mesh_generic_client_get_state(&common, &get);
 
     if (err) {
@@ -211,10 +204,11 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
     ESP_LOGI(TAG, "Generic client, event %u, error code %d, opcode is 0x%04x",
              event, param->error_code, param->params->opcode);
 
-    log_ble_mesh_client_packet(TAG, param->params);
+    log_ble_mesh_client_packet(TAG, event, param);
 
     switch (event) {
         case ESP_BLE_MESH_GENERIC_CLIENT_GET_STATE_EVT:
+            // Acknowledgement after sending GET
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_CLIENT_GET_STATE_EVT");
             if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET) {
                 ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET, level %d",
@@ -222,6 +216,7 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
             }
             break;
         case ESP_BLE_MESH_GENERIC_CLIENT_SET_STATE_EVT:
+            // Acknoledgement after sending SET
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_CLIENT_SET_STATE_EVT");
             if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET) {
                 ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET, level %d",
@@ -229,9 +224,11 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
             }
             break;
         case ESP_BLE_MESH_GENERIC_CLIENT_PUBLISH_EVT:
+            // Publish message received
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_CLIENT_PUBLISH_EVT");
             break;
         case ESP_BLE_MESH_GENERIC_CLIENT_TIMEOUT_EVT:
+            // Timeout on a message sent
             ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_CLIENT_TIMEOUT_EVT");
             if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET) {
                 /* If failed to get the response of Generic Level Set, resend Generic Level Set  */
