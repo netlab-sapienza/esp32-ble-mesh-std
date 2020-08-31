@@ -131,7 +131,7 @@ void log_ble_mesh_generic_rcv_server_packet(char *role, esp_ble_mesh_generic_ser
         }
     }
 
-    ESP_LOGI(TAG_LOG, "%d", n);
+//    ESP_LOGI(TAG_LOG, "%d", n);
     ESP_LOGI(TAG_LOG, "%s", buf);
 
 }
