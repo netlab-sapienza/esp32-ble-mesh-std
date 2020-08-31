@@ -115,7 +115,7 @@ static void handle_level_service_msg(esp_ble_mesh_model_t *model, esp_ble_mesh_m
                                                &srv->state.level);
             break;
         case ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET:
-        case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK:
+        case ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK:
             srv->state.last_level = srv->state.level;
             srv->state.level = set->level;
 
