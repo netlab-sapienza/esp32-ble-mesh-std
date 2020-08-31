@@ -128,10 +128,6 @@ static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble
 
 
 void ble_mesh_send_test_gen_level_get(void) {
-    if (!esp_ble_mesh_node_is_provisioned()) {
-        ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
-        return;
-    }
 
     esp_err_t err = ESP_OK;
 
@@ -177,14 +173,13 @@ void ble_mesh_send_gen_level_set(void) {
     common.msg_timeout = 0;     /* 0 indicates that timeout value from menuconfig will be used */
     common.msg_role = ROLE_NODE;
 
-    set.level_set.op_en = false;
+//    set.level_set.op_en = false;
     set.level_set.level = store.level;
     set.level_set.tid = store.tid++;
 
-
-//    if set.level.op_en == true:
-//    set.level_set.delay = store.delay;
-//    set.level_set.trans_time = store.trans_time;
+    set.level_set.op_en = true;
+    set.level_set.delay = store.delay;
+    set.level_set.trans_time = store.trans_time;
 
     err = esp_ble_mesh_generic_client_set_state(&common, &set);
     if (err) {
@@ -242,21 +237,14 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
 
 void ble_mesh_send_test_gen_level_set(void) {
 
-    if (!esp_ble_mesh_node_is_provisioned()) {
-        ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
-        return;
-    }
-
     return ble_mesh_send_gen_level_set();
 }
 
 
 static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                                       esp_ble_mesh_cfg_server_cb_param_t *param) {
-
-    log_ble_mesh_config_server_packet(TAG, param);
-
     if (event == ESP_BLE_MESH_CFG_SERVER_STATE_CHANGE_EVT) {
+        log_ble_mesh_config_server_packet(TAG, param);
         switch (param->ctx.recv_op) {
             case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
                 ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD");
@@ -278,7 +266,9 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                     mesh_info_store(); /* Store proper mesh example info */
                 }
                 break;
+
             default:
+                ESP_LOGI(TAG, "Unhandled case 0x%08x", param->ctx.recv_op);
                 break;
         }
     }
@@ -325,7 +315,12 @@ esp_err_t ble_mesh_init_client(void) {
 
     ESP_LOGI(TAG, "BLE Mesh Node initialized");
     bool alt = false;
+
     while (1) {
+        if (!esp_ble_mesh_node_is_provisioned()) {
+            ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
+            continue;
+        }
         if (alt) {
             ESP_LOGI(TAG, "Sending Generic SET");
             ble_mesh_send_test_gen_level_set();
@@ -334,7 +329,7 @@ esp_err_t ble_mesh_init_client(void) {
             ble_mesh_send_test_gen_level_get();
         }
         alt = !alt;
-        vTaskDelay(20000 / portTICK_PERIOD_MS);
+        vTaskDelay(7000 / portTICK_PERIOD_MS);
     }
 
     return err;
