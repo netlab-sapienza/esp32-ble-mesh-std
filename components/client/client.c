@@ -20,6 +20,25 @@
 #define TAG "CLIENT"
 
 
+esp_ble_mesh_cfg_srv_t config_server_client = {
+        .relay = ESP_BLE_MESH_RELAY_DISABLED,
+        .beacon = ESP_BLE_MESH_BEACON_ENABLED,
+#if defined(CONFIG_BLE_MESH_FRIEND)
+        .friend_state = ESP_BLE_MESH_FRIEND_ENABLED,
+#else
+        .friend_state = ESP_BLE_MESH_FRIEND_NOT_SUPPORTED,
+#endif
+#if defined(CONFIG_BLE_MESH_GATT_PROXY_SERVER)
+        .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_ENABLED,
+#else
+        .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_NOT_SUPPORTED,
+#endif
+        .default_ttl = 7, // default ttl value is 7 it decide the number of hops in the network
+        /* 3 transmissions with 20ms interval */
+        .net_transmit = ESP_BLE_MESH_TRANSMIT(2, 20),
+        .relay_retransmit = ESP_BLE_MESH_TRANSMIT(2, 20)
+};
+
 static struct info_store {
     uint16_t net_idx;   /* NetKey Index */
     uint16_t app_idx;   /* AppKey Index */
@@ -42,7 +61,8 @@ static esp_ble_mesh_client_t level_client;
 ESP_BLE_MESH_MODEL_PUB_DEFINE(level_client_model, 2 + 1, ROLE_NODE);
 
 static esp_ble_mesh_model_t root_models[] = {
-        ESP_BLE_MESH_MODEL_CFG_SRV(&config_server), // This model is a server because it works for configuring the node
+        ESP_BLE_MESH_MODEL_CFG_SRV(
+                &config_server_client), // This model is a server because it works for configuring the node
         ESP_BLE_MESH_MODEL_GEN_LEVEL_CLI(&level_client_model, &level_client),
 };
 
@@ -317,18 +337,19 @@ esp_err_t ble_mesh_init_client(void) {
     bool alt = false;
 
     while (1) {
-        if (!esp_ble_mesh_node_is_provisioned()) {
-            ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
-            continue;
-        }
-        if (alt) {
-            ESP_LOGI(TAG, "Sending Generic SET");
-            ble_mesh_send_test_gen_level_set();
+        if (esp_ble_mesh_node_is_provisioned()) {
+            if (alt) {
+                ESP_LOGI(TAG, "Sending Generic SET");
+                ble_mesh_send_test_gen_level_set();
+            } else {
+                ESP_LOGI(TAG, "Sending Generic GET");
+                ble_mesh_send_test_gen_level_get();
+            }
+            alt = !alt;
         } else {
-            ESP_LOGI(TAG, "Sending Generic GET");
-            ble_mesh_send_test_gen_level_get();
+            ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
         }
-        alt = !alt;
+
         vTaskDelay(7000 / portTICK_PERIOD_MS);
     }
 

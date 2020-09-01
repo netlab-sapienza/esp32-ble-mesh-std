@@ -255,8 +255,8 @@ esp_err_t ble_mesh_nvs_store(nvs_handle_t handle, const char *key, const void *d
         return err;
     }
 
-    ESP_LOGI(TAG, "Store, key \"%s\", length %u", key, length);
-    ESP_LOG_BUFFER_HEX("EXAMPLE_NVS: Store, data", data, length);
+//    ESP_LOGI(TAG, "Store, key \"%s\", length %u", key, length);
+//    ESP_LOG_BUFFER_HEX("EXAMPLE_NVS: Store, data", data, length);
     return err;
 }
 
@@ -346,3 +346,24 @@ esp_err_t ble_mesh_nvs_erase(nvs_handle_t handle, const char *key) {
     return err;
 }
 
+
+
+
+// this portion of the code has to be put inside /esp-idf/components/bt/esp_ble_mesh/mesh_core/net.c
+//
+
+// line 1196:
+// log_ble_mesh_relayed_packet("RELAY", rx->ctx);
+
+
+// line 1157:
+
+//int global_id_net = 0;
+//
+//void log_ble_mesh_relayed_packet(char *role, struct bt_mesh_msg_ctx ctx) {
+//
+//    ESP_LOGI("BenchMark", " %u 000 %s 0x%04x 0x%04x 0x%04x 0x%04x %d %d %d %d %d 0x%08x", global_id_net, role, ctx.net_idx,
+//             ctx.app_idx, ctx.addr, ctx.recv_dst, ctx.recv_rssi, ctx.recv_ttl, ctx.send_rel, ctx.send_ttl, ctx.srv_send,
+//             ctx.recv_op);
+//    global_id_net++;
+//}
