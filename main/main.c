@@ -14,7 +14,6 @@
 #define SERVER 0
 #define CLIENT 1
 #define RELAY 2
-#define ATTACKER 3
 
 
 void app_main(void) {
@@ -46,7 +45,6 @@ void app_main(void) {
         case RELAY:
             err = ble_mesh_init_relay();
             break;
-        case ATTACKER:
 
         default:
             err = ESP_FAIL;
