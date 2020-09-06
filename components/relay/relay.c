@@ -22,10 +22,28 @@
 uint16_t node_net_idx = ESP_BLE_MESH_KEY_UNUSED;
 uint16_t node_app_idx = ESP_BLE_MESH_KEY_UNUSED;
 
+esp_ble_mesh_cfg_srv_t config_server_relay = {
+        .relay = ESP_BLE_MESH_RELAY_ENABLED,
+        .beacon = ESP_BLE_MESH_BEACON_ENABLED,
+#if defined(CONFIG_BLE_MESH_FRIEND)
+        .friend_state = ESP_BLE_MESH_FRIEND_ENABLED,
+#else
+        .friend_state = ESP_BLE_MESH_FRIEND_NOT_SUPPORTED,
+#endif
+#if defined(CONFIG_BLE_MESH_GATT_PROXY_SERVER)
+        .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_ENABLED,
+#else
+        .gatt_proxy = ESP_BLE_MESH_GATT_PROXY_NOT_SUPPORTED,
+#endif
+        .default_ttl = 7, // default ttl value is 7 it decide the number of hops in the network
+        /* 3 transmissions with 20ms interval */
+        .net_transmit = ESP_BLE_MESH_TRANSMIT(2, 20),
+        .relay_retransmit = ESP_BLE_MESH_TRANSMIT(2, 20)
+};
 
 // this is the root model or the model for the primary element
 static esp_ble_mesh_model_t root_models[] = {
-        ESP_BLE_MESH_MODEL_CFG_SRV(&config_server)
+        ESP_BLE_MESH_MODEL_CFG_SRV(&config_server_relay)
 };
 
 // the number of element in a given node relation of with the model
@@ -140,53 +158,11 @@ static void handle_level_service_msg(esp_ble_mesh_model_t *model, esp_ble_mesh_m
     }
 }
 
-static void ble_mesh_generic_server_cb(esp_ble_mesh_generic_server_cb_event_t event,
-                                       esp_ble_mesh_generic_server_cb_param_t *param) {
-
-    esp_ble_mesh_gen_level_srv_t *srv;
-
-    log_ble_mesh_generic_rcv_server_packet(TAG, param);
-
-    switch (event) {
-        case ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT:
-            ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT");
-            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET ||
-                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK) {
-                ESP_LOGI(TAG, "level %d", param->value.state_change.level_set.level);
-            }
-            break;
-        case ESP_BLE_MESH_GENERIC_SERVER_RECV_GET_MSG_EVT:
-            ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_RECV_GET_MSG_EVT");
-            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_GET) {
-                srv = param->model->user_data;
-                ESP_LOGI(TAG, "level %d", srv->state.level);
-                handle_level_service_msg(param->model, &param->ctx, NULL);
-            }
-            break;
-        case ESP_BLE_MESH_GENERIC_SERVER_RECV_SET_MSG_EVT:
-            ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_SERVER_RECV_SET_MSG_EVT");
-            if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET ||
-                param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_LEVEL_SET_UNACK) {
-                ESP_LOGI(TAG, "level %d, tid 0x%02x", param->value.set.level.level, param->value.set.level.tid);
-
-                if (param->value.set.level.op_en) {
-                    ESP_LOGI(TAG, "trans_time 0x%02x, delay 0x%02x",
-                             param->value.set.level.trans_time, param->value.set.level.delay);
-                }
-                handle_level_service_msg(param->model, &param->ctx, &param->value.set.level);
-            }
-            break;
-        default:
-            ESP_LOGE(TAG, "Unhandled Generic Server event 0x%02x", event);
-            break;
-    }
-}
-
 static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                                       esp_ble_mesh_cfg_server_cb_param_t *param) {
 
     log_ble_mesh_config_server_packet(TAG, param);
-    
+
     if (event == ESP_BLE_MESH_CFG_SERVER_STATE_CHANGE_EVT) {
         switch (param->ctx.recv_op) {
             case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:

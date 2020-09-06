@@ -96,9 +96,9 @@ int write_ble_mesh_model_packet_common(char *buf, char *role, uint16_t net_idx, 
     n += sprintf(buf + n, " 0x%04x ", addr);
     n += sprintf(buf + n, " 0x%04x ", recv_dst);
     n += sprintf(buf + n, " %d ", recv_rssi);
-    n += sprintf(buf + n, " %d ", recv_ttl);
-    n += sprintf(buf + n, " %d ", send_rel);
-    n += sprintf(buf + n, " %d ", send_ttl);
+    n += sprintf(buf + n, " %hhu ", recv_ttl);
+    n += sprintf(buf + n, " %hhu ", send_rel);
+    n += sprintf(buf + n, " %hhu ", send_ttl);
     n += sprintf(buf + n, " %d ", srv_send);
     n += sprintf(buf + n, " 0x%08x ", recv_op);
 
@@ -359,11 +359,13 @@ esp_err_t ble_mesh_nvs_erase(nvs_handle_t handle, const char *key) {
 // line 1157:
 
 //int global_id_net = 0;
+
+//void log_ble_mesh_relayed_packet(char *role, struct bt_mesh_net_rx *rx) {
 //
-//void log_ble_mesh_relayed_packet(char *role, struct bt_mesh_msg_ctx ctx) {
+//    ESP_LOGI("BenchMark", " %u %s %u %hhu 0x%04x 0x%04x 0x%04x 0x%04x %hhd %hhu %hhu %hhu", global_id_net, role, rx->seq, rx->ctl,
+//             rx->ctx.net_idx,
+//             rx->ctx.app_idx, rx->ctx.addr, rx->ctx.recv_dst, rx->ctx.recv_rssi, rx->ctx.recv_ttl, rx->ctx.send_rel,
+//             rx->ctx.send_ttl);
 //
-//    ESP_LOGI("BenchMark", " %u 000 %s 0x%04x 0x%04x 0x%04x 0x%04x %d %d %d %d %d 0x%08x", global_id_net, role, ctx.net_idx,
-//             ctx.app_idx, ctx.addr, ctx.recv_dst, ctx.recv_rssi, ctx.recv_ttl, ctx.send_rel, ctx.send_ttl, ctx.srv_send,
-//             ctx.recv_op);
 //    global_id_net++;
 //}
