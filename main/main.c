@@ -9,7 +9,7 @@
 
 #define TAG "MAIN"
 
-#define ROLE 1
+#define ROLE 0
 
 #define SERVER 0
 #define CLIENT 1
