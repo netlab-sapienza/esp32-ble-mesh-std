@@ -294,6 +294,37 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
     }
 }
 
+// the client will send a packet at least once every (max_limit * 7) seconds
+void client_routine() {
+    bool alt = false;
+    uint32_t threshold = UINT32_MAX / 2;
+    int max_limit = 5;
+    int counter = 0;
+
+    while (1) {
+        if (esp_ble_mesh_node_is_provisioned()) {
+            if (esp_random() > threshold || counter == max_limit) {
+                if (alt) {
+                    ESP_LOGI(TAG, "Sending Generic SET");
+                    ble_mesh_send_test_gen_level_set();
+                } else {
+                    ESP_LOGI(TAG, "Sending Generic GET");
+                    ble_mesh_send_test_gen_level_get();
+                }
+                alt = esp_random() > threshold;
+                counter = 0;
+            } else {
+                counter++;
+            }
+        } else {
+            ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
+        }
+
+        vTaskDelay(7000 / portTICK_PERIOD_MS);
+    }
+
+}
+
 esp_err_t ble_mesh_init_client(void) {
     esp_err_t err = ESP_OK;
 
@@ -334,24 +365,8 @@ esp_err_t ble_mesh_init_client(void) {
     }
 
     ESP_LOGI(TAG, "BLE Mesh Node initialized");
-    bool alt = false;
 
-    while (1) {
-        if (esp_ble_mesh_node_is_provisioned()) {
-            if (alt) {
-                ESP_LOGI(TAG, "Sending Generic SET");
-                ble_mesh_send_test_gen_level_set();
-            } else {
-                ESP_LOGI(TAG, "Sending Generic GET");
-                ble_mesh_send_test_gen_level_get();
-            }
-            alt = !alt;
-        } else {
-            ESP_LOGI(TAG, "Node still unprovisioned, gonna wait");
-        }
-
-        vTaskDelay(7000 / portTICK_PERIOD_MS);
-    }
+    client_routine();
 
     return err;
 }

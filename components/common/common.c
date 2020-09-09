@@ -4,6 +4,7 @@
 
 #include <esp_ble_mesh_config_model_api.h>
 #include <esp_ble_mesh_generic_model_api.h>
+#include <math.h>
 
 #include "common.h"
 
@@ -350,22 +351,56 @@ esp_err_t ble_mesh_nvs_erase(nvs_handle_t handle, const char *key) {
 
 
 // this portion of the code has to be put inside /esp-idf/components/bt/esp_ble_mesh/mesh_core/net.c
-//
-
-// line 1196:
-// log_ble_mesh_relayed_packet("RELAY", rx->ctx);
 
 
-// line 1157:
+// line 1157 funzione di log:
 
 //int global_id_net = 0;
-
-//void log_ble_mesh_relayed_packet(char *role, struct bt_mesh_net_rx *rx) {
 //
-//    ESP_LOGI("BenchMark", " %u %s %u %hhu 0x%04x 0x%04x 0x%04x 0x%04x %hhd %hhu %hhu %hhu", global_id_net, role, rx->seq, rx->ctl,
-//             rx->ctx.net_idx,
-//             rx->ctx.app_idx, rx->ctx.addr, rx->ctx.recv_dst, rx->ctx.recv_rssi, rx->ctx.recv_ttl, rx->ctx.send_rel,
-//             rx->ctx.send_ttl);
+//void log_ble_mesh_network_packet(char *role, struct bt_mesh_net_rx *rx, struct net_buf_simple *buf) {
+//
+//    // rx->old_iv solo a scopo di test da eliminare in forma finale
+//
+//    ESP_LOGI("BenchMarkNetwork", " %u %s %u 0x%04x 0x%04x 0x%04x 0x%04x %hhd %hhu %hu %hhu",
+//             global_id_net, role, rx->seq, rx->ctx.net_idx,
+//             rx->ctx.app_idx, rx->ctx.addr, rx->ctx.recv_dst,
+//             rx->ctx.recv_rssi, rx->ctx.recv_ttl, buf->len, rx->old_iv);
+//
 //
 //    global_id_net++;
 //}
+
+// line 1196: eventuale funzione di drop e di attacco pacchetto
+
+//true random distribution used to decide whenever drop the packet
+bool drop_the_packet() {
+    uint32_t threshold = UINT32_MAX / 2;
+
+    return (esp_random() > threshold);
+
+}
+
+// pseudo random normal distribution (mean 0 stddev 1)
+double sampleNormal() {
+    double u = ((double) esp_random() / (UINT32_MAX)) * 2 - 1;
+    double v = ((double) esp_random() / (UINT32_MAX)) * 2 - 1;
+    double r = u * u + v * v;
+    if (r == 0 || r > 1) return sampleNormal();
+    double c = sqrt(-2 * log(r) / r);
+    return u * c;
+}
+
+
+bool pseudo_random_drop_the_packet() {
+    return ((int) sampleNormal()) % 2;
+}
+
+// targeted attack versus a given server
+bool drop_targeted(struct bt_mesh_net_rx *rx, uint16_t target_addr) {
+    return rx->ctx.recv_dst == target_addr;
+}
+
+// line 1354: log
+//log_ble_mesh_network_packet("RELAY", rx);
+//log_ble_mesh_network_packet("SERVER", rx);
+//log_ble_mesh_network_packet("CLIENT", rx);
