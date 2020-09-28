@@ -17,7 +17,6 @@
 
 uint8_t dev_uuid[DEV_UUID_BUFFER_SIZE] = {0xdd, 0xdd};
 
-unsigned int global_id = 0;
 
 esp_ble_mesh_cfg_srv_t config_server = {
         .relay = ESP_BLE_MESH_RELAY_DISABLED,
@@ -88,9 +87,8 @@ int write_ble_mesh_model_packet_common(char *buf, char *role, uint16_t net_idx, 
                                        int8_t recv_rssi, uint8_t recv_ttl, uint8_t send_rel, uint8_t send_ttl,
                                        bool srv_send, uint32_t recv_op) {
     int n = 0;
-    n += sprintf(buf + n, " %u ", global_id);
+    n += sprintf(buf + n, " M ");
     n += print_dev_addr(buf + n);
-    global_id++;
     n += sprintf(buf + n, " %s ", role);
     n += sprintf(buf + n, " 0x%04x ", net_idx);
     n += sprintf(buf + n, " 0x%04x ", app_idx);
@@ -355,19 +353,17 @@ esp_err_t ble_mesh_nvs_erase(nvs_handle_t handle, const char *key) {
 
 // line 1157 funzione di log:
 
-//int global_id_net = 0;
 //
 //void log_ble_mesh_network_packet(char *role, struct bt_mesh_net_rx *rx, struct net_buf_simple *buf) {
 //
 //    // rx->old_iv solo a scopo di test da eliminare in forma finale
 //
-//    ESP_LOGI("BenchMarkNetwork", " %u %s %u 0x%04x 0x%04x 0x%04x 0x%04x %hhd %hhu %hu %hhu",
-//             global_id_net, role, rx->seq, rx->ctx.net_idx,
+//    ESP_LOGI("BenchMarkNetwork", " N %s %u 0x%04x 0x%04x 0x%04x 0x%04x %hhd %hhu %hu %hhu",
+//             role, rx->seq, rx->ctx.net_idx,
 //             rx->ctx.app_idx, rx->ctx.addr, rx->ctx.recv_dst,
 //             rx->ctx.recv_rssi, rx->ctx.recv_ttl, buf->len, rx->old_iv);
 //
 //
-//    global_id_net++;
 //}
 
 // line 1196: eventuale funzione di drop e di attacco pacchetto
