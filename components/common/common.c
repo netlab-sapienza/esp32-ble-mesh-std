@@ -354,15 +354,15 @@ esp_err_t ble_mesh_nvs_erase(nvs_handle_t handle, const char *key) {
 // line 1157 funzione di log:
 
 
-//void log_ble_mesh_network_packet(char *role, struct bt_mesh_net_rx *rx, struct net_buf_simple *buf) {
-//
-//    // rx->old_iv solo a scopo di test da eliminare in forma finale
-//
-//    ESP_LOGI("BenchMark", " N %s %u 0x%04x 0x%04x 0x%04x 0x%04x %hhd %hhu %hu",
-//             role, rx->seq, rx->ctx.net_idx,
-//             rx->ctx.app_idx, rx->ctx.addr, rx->ctx.recv_dst,
-//             rx->ctx.recv_rssi, rx->ctx.recv_ttl, buf->len);
-//}
+void log_ble_mesh_network_packet(char *role, struct bt_mesh_net_rx *rx, struct net_buf_simple *buf) {
+
+    // rx->old_iv solo a scopo di test da eliminare in forma finale
+
+    ESP_LOGI("BenchMark", " N %s %u 0x%04x 0x%04x 0x%04x 0x%04x %hhd %hhu %hu",
+             role, rx->seq, rx->ctx.net_idx,
+             rx->ctx.app_idx, rx->ctx.addr, rx->ctx.recv_dst,
+             rx->ctx.recv_rssi, rx->ctx.recv_ttl, buf->len);
+}
 
 // line 1196: eventuale funzione di drop e di attacco pacchetto
 
@@ -389,12 +389,17 @@ bool pseudo_random_drop_the_packet() {
     return ((int) sampleNormal()) % 2;
 }
 
+// line 1411 circa
 // targeted attack versus a given client
 //bool drop_targeted(struct bt_mesh_net_rx *rx, uint16_t target_addr) {
 //    uint32_t threshold = UINT32_MAX / 2;
 //    return esp_random() > threshold && rx->ctx.addr == target_addr;
 //}
-
+//// inside bt_mesh_net_recv
+//if(drop_targeted(rx,)){
+//ESP_LOGI("ATTACK","Dropped packet!");
+//return;
+//}
 // line 1354: log
 //log_ble_mesh_network_packet("RELAY", rx);
 //log_ble_mesh_network_packet("SERVER", rx);
