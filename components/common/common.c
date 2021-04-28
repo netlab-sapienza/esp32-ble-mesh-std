@@ -14,6 +14,8 @@
 
 #define DEV_UUID_BUFFER_SIZE 16
 #define LOG_BUF_SIZE 512
+#define CONFIG_BLE_MESH_FRIEND 
+
 
 uint8_t dev_uuid[DEV_UUID_BUFFER_SIZE] = {0xdd, 0xdd};
 

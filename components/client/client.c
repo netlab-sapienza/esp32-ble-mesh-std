@@ -13,12 +13,13 @@
 #include "esp_ble_mesh_networking_api.h"
 #include "esp_ble_mesh_config_model_api.h"
 #include "esp_ble_mesh_generic_model_api.h"
+#include "esp_ble_mesh_low_power_api.h"
 
 #include "client.h"
 #include "common.h"
 
 #define TAG "CLIENT"
-
+#define CONFIG_BLE_MESH_FRIEND
 
 esp_ble_mesh_cfg_srv_t config_server_client = {
         .relay = ESP_BLE_MESH_RELAY_DISABLED,
@@ -140,6 +141,26 @@ static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble
         case ESP_BLE_MESH_NODE_SET_UNPROV_DEV_NAME_COMP_EVT:
             ESP_LOGI(TAG, "ESP_BLE_MESH_NODE_SET_UNPROV_DEV_NAME_COMP_EVT, err_code %d",
                      param->node_set_unprov_dev_name_comp.err_code);
+            break;
+        case ESP_BLE_MESH_LPN_FRIENDSHIP_ESTABLISH_EVT :
+            ESP_LOGI(TAG, "ESP_BLE_MESH_LPN_FRIENDSHIP_ESTABLISH_EVT, friend addr %u",
+                     (unsigned int) param->lpn_friendship_establish.friend_addr);
+            break;
+        case ESP_BLE_MESH_LPN_POLL_COMP_EVT: 
+            ESP_LOGI(TAG, "ESP_BLE_MESH_LPN_POLL_COMP_EVT, err_code %d",
+                     param->lpn_poll_comp.err_code);
+            break;
+        case ESP_BLE_MESH_LPN_FRIENDSHIP_TERMINATE_EVT: 
+            ESP_LOGI(TAG, "ESP_BLE_MESH_LPN_FRIENDSHIP_TERMINATE_EVT, friend addr %u",
+                     (unsigned int) param->lpn_friendship_terminate.friend_addr);
+            break;
+        case ESP_BLE_MESH_FRIEND_FRIENDSHIP_ESTABLISH_EVT: 
+            ESP_LOGI(TAG, "ESP_BLE_MESH_FRIEND_FRIENDSHIP_ESTABLISH_EVT, lpn addr %u",
+                     (unsigned int) param->frnd_friendship_establish.lpn_addr);
+            break;
+        case ESP_BLE_MESH_FRIEND_FRIENDSHIP_TERMINATE_EVT: 
+            ESP_LOGI(TAG, "ESP_BLE_MESH_FRIEND_FRIENDSHIP_TERMINATE_EVT, lpn addr %u, reason %d",
+                     (unsigned int) param->frnd_friendship_terminate.lpn_addr,param->frnd_friendship_terminate.reason);
             break;
         default:
             break;

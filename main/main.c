@@ -10,7 +10,6 @@
 #define TAG "MAIN"
 
 #define ROLE 1
-
 #define SERVER 0
 #define CLIENT 1
 #define RELAY 2

@@ -78,6 +78,26 @@ void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event, esp_ble_mesh_p
             ESP_LOGI(TAG, "ESP_BLE_MESH_NODE_SET_UNPROV_DEV_NAME_COMP_EVT, err_code %d",
                      param->node_set_unprov_dev_name_comp.err_code);
             break;
+        case ESP_BLE_MESH_LPN_FRIENDSHIP_ESTABLISH_EVT :
+            ESP_LOGI(TAG, "ESP_BLE_MESH_LPN_FRIENDSHIP_ESTABLISH_EVT, friend addr %u",
+                     (unsigned int) param->lpn_friendship_establish.friend_addr);
+            break;
+        case ESP_BLE_MESH_LPN_POLL_COMP_EVT: 
+            ESP_LOGI(TAG, "ESP_BLE_MESH_LPN_POLL_COMP_EVT, err_code %d",
+                     param->lpn_poll_comp.err_code);
+            break;
+        case ESP_BLE_MESH_LPN_FRIENDSHIP_TERMINATE_EVT: 
+            ESP_LOGI(TAG, "ESP_BLE_MESH_LPN_FRIENDSHIP_TERMINATE_EVT, friend addr %u",
+                     (unsigned int) param->lpn_friendship_terminate.friend_addr);
+            break;
+        case ESP_BLE_MESH_FRIEND_FRIENDSHIP_ESTABLISH_EVT: 
+            ESP_LOGI(TAG, "ESP_BLE_MESH_FRIEND_FRIENDSHIP_ESTABLISH_EVT, lpn addr %u",
+                     (unsigned int) param->frnd_friendship_establish.lpn_addr);
+            break;
+        case ESP_BLE_MESH_FRIEND_FRIENDSHIP_TERMINATE_EVT: 
+            ESP_LOGI(TAG, "ESP_BLE_MESH_FRIEND_FRIENDSHIP_TERMINATE_EVT, lpn addr %u, reason %d",
+                     (unsigned int) param->frnd_friendship_terminate.lpn_addr,param->frnd_friendship_terminate.reason);
+            break;
         default:
             ESP_LOGW(TAG, "Event not handled, event code: %d", event);
             break;
